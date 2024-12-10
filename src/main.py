@@ -1,22 +1,28 @@
 from game import Game
 import sys
+import os
+
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python main.py <mode>")
-        return
+        print("Usage: python main.py [mode]")
+        print("Modes: greedy, genetic, mcts, random, student")
+        sys.exit(1)
 
     mode = sys.argv[1]
-    agent = None
 
     if mode == "student":
+        # Use CUSTOM_AI_MODEL for student mode
         from custom_model import CUSTOM_AI_MODEL
-        agent = CUSTOM_AI_MODEL()  # Initialize the custom model
+        ai = CUSTOM_AI_MODEL(model_path="trained_models/tetris_2000")
+        game = Game(mode="student", agent=ai)
+    else:
+        # For other modes
+        game = Game(mode=mode)
 
-    # Initialize the game with the selected mode and agent
-    g = Game(mode, agent)
-    g.run()
-    #g.run_no_visual()
+    # Run the game
+    game.run_no_visual()
+
 
 if __name__ == "__main__":
     main()
