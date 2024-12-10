@@ -1,7 +1,9 @@
 import torch
-from q_learning import QLearning  # Assuming QLearning is your model class
+
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
+
+from q_learning import QLearning  # Assuming QLearning is your model class
 class CUSTOM_AI_MODEL:
     def __init__(self, model_path="trained_models/tetris_2000"):
         # Load the pre-trained model
