@@ -260,42 +260,42 @@ class Board:
             self.new_piece()
         return score, self.gameover
 
-    # def render(self, video=None):
-    #     if not self.gameover:
-    #         img = [self.piece_manager.piece_colors[p] for row in self.get_current_board_state() for p in row]
-    #     else:
-    #         img = [self.piece_manager.piece_colors[p] for row in self.board for p in row]
-    #     img = np.array(img).reshape((self.height, self.width, 3)).astype(np.uint8)
-    #     img = img[..., ::-1]
-    #     img = Image.fromarray(img, "RGB")
+    def render(self, video=None):
+        if not self.gameover:
+            img = [self.piece_manager.piece_colors[p] for row in self.get_current_board_state() for p in row]
+        else:
+            img = [self.piece_manager.piece_colors[p] for row in self.board for p in row]
+        img = np.array(img).reshape((self.height, self.width, 3)).astype(np.uint8)
+        img = img[..., ::-1]
+        img = Image.fromarray(img, "RGB")
 
-    #     img = img.resize((self.width * self.block_size, self.height * self.block_size), 0)
-    #     img = np.array(img)
-    #     img[[i * self.block_size for i in range(self.height)], :, :] = 0
-    #     img[:, [i * self.block_size for i in range(self.width)], :] = 0
+        img = img.resize((self.width * self.block_size, self.height * self.block_size), 0)
+        img = np.array(img)
+        img[[i * self.block_size for i in range(self.height)], :, :] = 0
+        img[:, [i * self.block_size for i in range(self.width)], :] = 0
 
-    #     img = np.concatenate((img, self.extra_board), axis=1)
+        img = np.concatenate((img, self.extra_board), axis=1)
 
-    #     cv2.putText(img, "Score:", (self.width * self.block_size + int(self.block_size / 2), self.block_size),
-    #                 fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
-    #     cv2.putText(img, str(self.score),
-    #                 (self.width * self.block_size + int(self.block_size / 2), 2 * self.block_size),
-    #                 fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
+        cv2.putText(img, "Score:", (self.width * self.block_size + int(self.block_size / 2), self.block_size),
+                    fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
+        cv2.putText(img, str(self.score),
+                    (self.width * self.block_size + int(self.block_size / 2), 2 * self.block_size),
+                    fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
 
-    #     cv2.putText(img, "Pieces:", (self.width * self.block_size + int(self.block_size / 2), 4 * self.block_size),
-    #                 fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
-    #     cv2.putText(img, str(self.tetrominoes),
-    #                 (self.width * self.block_size + int(self.block_size / 2), 5 * self.block_size),
-    #                 fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
+        cv2.putText(img, "Pieces:", (self.width * self.block_size + int(self.block_size / 2), 4 * self.block_size),
+                    fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
+        cv2.putText(img, str(self.tetrominoes),
+                    (self.width * self.block_size + int(self.block_size / 2), 5 * self.block_size),
+                    fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
 
-    #     cv2.putText(img, "Lines:", (self.width * self.block_size + int(self.block_size / 2), 7 * self.block_size),
-    #                 fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
-    #     cv2.putText(img, str(self.cleared_lines),
-    #                 (self.width * self.block_size + int(self.block_size / 2), 8 * self.block_size),
-    #                 fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
+        cv2.putText(img, "Lines:", (self.width * self.block_size + int(self.block_size / 2), 7 * self.block_size),
+                    fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
+        cv2.putText(img, str(self.cleared_lines),
+                    (self.width * self.block_size + int(self.block_size / 2), 8 * self.block_size),
+                    fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
 
-    #     if video:
-    #         video.write(img)
+        if video:
+            video.write(img)
 
-    #     cv2.imshow("Deep Q-Learning Tetris", img)
-    #     cv2.waitKey(1)
+        cv2.imshow("Deep Q-Learning Tetris", img)
+        cv2.waitKey(1)
