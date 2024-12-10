@@ -2,6 +2,7 @@ import argparse
 import torch
 import cv2
 from board import Board
+from q_learning import QLearning
 
 def parse_config():
     import argparse
