@@ -26,8 +26,9 @@ def test(opt):
 
     # Initialize and load the model
     model = QLearning()  # Ensure this matches the training model
-    model.load_state_dict(torch.load("{}/tetris_2000_state_dict.pth".format(opt.model_save_path), map_location=device))
-    model.to(device)
+    model = torch.load("{}/tetris".format(opt.saved_path), map_location=lambda storage, loc: storage)
+    #model.load_state_dict(torch.load("{}/tetris".format(opt.model_save_path), map_location=device))
+    #model.to(device)
     model.eval()
 
     # Initialize the Tetris board
