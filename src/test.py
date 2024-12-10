@@ -38,5 +38,5 @@ def test(opt):
 
 
 if __name__ == "__main__":
-    opt = get_args()
+    opt = parse_config()
     test(opt)
