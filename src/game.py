@@ -1,214 +1,103 @@
-from board import Board
-from time import sleep
-#from greedy import Greedy_AI
-
-#from genetic import Genetic_AI
-#from randomChoice import RandomChoice_NOT_AI
-#from mcts import MCTS_AI
-from custom_model import CUSTOM_AI_MODEL
-from piece import Piece
+import argparse
+import torch
 import pygame
+from board import Board
+from piece import Piece
+from q_learning import QLearning
 
-BLACK = 0, 0, 0
-WHITE = 255, 255, 255
-GREEN = (0, 255, 0)
+# Define colors for the game
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
 
+def parse_config():
+    # Initialize the argument parser
+    parser = argparse.ArgumentParser()
 
-class Game:
-    def __init__(self, mode, agent=None):
-        self.board = Board(width = 10, height = 20, block_size = 20) 
-        self.curr_piece = Piece()
-        self.y = 20
-        self.x = 5
-        self.screenWidth = 500
-        self.screenHeight = 1000
-        self.top = 0
-        self.pieces_dropped = 0
-        self.rows_cleared = 0
-        if mode == "greedy":
-            self.ai = Greedy_AI()
-        elif mode == "genetic":
-            if agent == None:
-                self.ai = Genetic_AI()
-            else:
-                self.ai = agent
-        elif mode == "mcts":
-            self.ai = MCTS_AI()
-        elif mode == "random":
-            self.ai = RandomChoice_NOT_AI()
-        elif mode == "student":
-            self.ai = CUSTOM_AI_MODEL()
-        else:
-            self.ai = None
+    # Define command-line arguments
+    parser.add_argument("--height", type=int, default=20, help="Height of the game board")
+    parser.add_argument("--width", type=int, default=10, help="Width of the game board")
+    parser.add_argument("--block_size", type=int, default=30, help="Size of each block")
+    parser.add_argument("--fps", type=int, default=300, help="Frames per second")
+    parser.add_argument("--output", type=str, default="output.mp4")
+    parser.add_argument("--model_save_path", type=str, default="trained_models", help="Path to save trained models")
 
-    def run_no_visual(self):
-        if self.ai == None:
-            return -1
-        while True:
-            x, piece = self.ai.get_best_move(self.board, self.curr_piece)
-            self.curr_piece = piece
-            y = self.board.drop_height(self.curr_piece, x)
-            self.drop(y, x=x)
-            print(self.pieces_dropped, self.rows_cleared)
-            if self.board.top_filled():
-                break
+    return parser.parse_args()
 
-        print(self.pieces_dropped, self.rows_cleared)
-        return self.pieces_dropped, self.rows_cleared
+def test(opt):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    torch.manual_seed(123)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(123)
 
-    def run(self):
-        pygame.init()
-        self.screenSize = self.screenWidth, self.screenHeight
-        self.pieceHeight = (self.screenHeight - self.top) / self.board.height
-        self.pieceWidth = self.screenWidth / self.board.width
-        self.screen = pygame.display.set_mode(self.screenSize)
-        running = True
-        if self.ai != None:
-            MOVEEVENT, t = pygame.USEREVENT + 1, 100
-            print('AI')
-        else:
-            MOVEEVENT, t = pygame.USEREVENT + 1, 500
+    # Initialize and load the model
+    model = QLearning()
+    model.load_state_dict(torch.load(f"{opt.model_save_path}/tetris_2000_state_dict.pth", map_location=device))
+    model.to(device)
+    model.eval()
 
-        pygame.time.set_timer(MOVEEVENT, t)
-        while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-                if self.ai != None:
-                    if event.type == MOVEEVENT:
-                        # if event.type == pygame.KEYDOWN:
-                        x, piece = self.ai.get_best_move(self.board, self.curr_piece)
-                        self.curr_piece = piece
+    # Initialize the PyGame environment
+    pygame.init()
+    screen_width = opt.width * opt.block_size
+    screen_height = opt.height * opt.block_size
+    screen = pygame.display.set_mode((screen_width, screen_height))
+    pygame.display.set_caption("Tetris AI")
 
-                        while self.x != x:
-                            if self.x - x < 0:
-                                self.x += 1
-                            else:
-                                self.x -= 1
-                            self.y -= 1
-                            self.screen.fill(BLACK)
-                            self.draw()
-                            pygame.display.flip()
-                            sleep(0.01)
+    clock = pygame.time.Clock()
+    running = True
 
-                        y = self.board.drop_height(self.curr_piece, x)
-                        while self.y != y:
-                            if self.y < 0:
-                                break
-                            self.y -= 1
-                            self.screen.fill(BLACK)
-                            self.draw()
-                            pygame.display.flip()
-                            sleep(0.01)
+    # Initialize the Tetris board
+    env = Board(width=opt.width, height=opt.height, block_size=opt.block_size)
+    env.reset()
 
-                        self.drop(y, x=x)
-                        if self.board.top_filled():
-                            running = False
-                            break
-                    continue
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_s:
-                        y = self.board.drop_height(self.curr_piece, self.x)
-                        self.drop(y)
-                        if self.board.top_filled():
-                            running = False
-                            break
-                    if event.key == pygame.K_a:
-                        if self.x - 1 >= 0:
-                            occupied = False
-                            for b in self.curr_piece.body:
-                                if self.y + b[1] >= self.board.width:
-                                    continue
-                                if self.board.board[self.y + b[1]][self.x + b[0] - 1]:
-                                    occupied = True
-                                    break
-                            if not occupied:
-                                self.x -= 1
-                    if event.key == pygame.K_d:
-                        if self.x + 1 <= self.board.width - len(self.curr_piece.skirt):
-                            occupied = False
-                            for b in self.curr_piece.body:
-                                if self.y + b[1] >= self.board.width:
-                                    continue
-                                if self.board.board[self.y + b[1]][self.x + b[0] + 1]:
-                                    occupied = True
-                                    break
-                            if not occupied:
-                                self.x += 1
-                    if event.key == pygame.K_w:
-                        self.curr_piece = self.curr_piece.get_next_rotation()
-                if event.type == MOVEEVENT:
-                    if self.board.drop_height(self.curr_piece, self.x) == self.y:
-                        self.drop(self.y)
-                        if self.board.top_filled():
-                            running = False
-                        break
-                    self.y -= 1
-            self.screen.fill(BLACK)
-            self.draw()
-            pygame.display.flip()
-        pygame.quit()
-        # print("Game information:")
-        print("Pieces dropped:", self.pieces_dropped)
-        print("Rows cleared:", self.rows_cleared)
-        return self.pieces_dropped, self.rows_cleared
+    while running:
+        screen.fill(BLACK)
 
-    def drop(self, y, x=None):
-        if x == None:
-            x = self.x
-        self.board.place(x, y, self.curr_piece)
-        self.x = 5
-        self.y = 20
-        self.curr_piece = Piece()
-        self.pieces_dropped += 1
-        self.rows_cleared += self.board.clear_rows()
+        # Get the next action using the AI model
+        next_steps = env.get_next_states()
+        next_actions, next_states = zip(*next_steps.items())
+        next_states = torch.stack(next_states).to(device)
 
-    def draw(self):
-        self.draw_pieces()
-        self.draw_hover()
-        self.draw_grid()
+        with torch.no_grad():
+            predictions = model(next_states)[:, 0]
+        index = torch.argmax(predictions).item()
+        action = next_actions[index]
 
-    def draw_grid(self):
-        for row in range(0, self.board.height):
-            start = (0, row * self.pieceHeight + self.top)
-            end = (self.screenWidth, row * self.pieceHeight + self.top)
-            pygame.draw.line(self.screen, WHITE, start, end, width=2)
-        for col in range(1, self.board.height):
-            start = (col * self.pieceWidth, self.top)
-            end = (col * self.pieceWidth, self.screenHeight)
-            pygame.draw.line(self.screen, WHITE, start, end, width=2)
-        # border
-        tl = (0, 0)
-        bl = (0, self.screenHeight - 2)
-        br = (self.screenWidth - 2, self.screenHeight - 2)
-        tr = (self.screenWidth - 2, 0)
-        pygame.draw.line(self.screen, WHITE, tl, tr, width=2)
-        pygame.draw.line(self.screen, WHITE, tr, br, width=2)
-        pygame.draw.line(self.screen, WHITE, br, bl, width=2)
-        pygame.draw.line(self.screen, WHITE, tl, bl, width=2)
+        # Step the environment
+        _, done = env.step(action, render=False)
 
-    def draw_pieces(self):
-        for row in range(self.board.height):
-            for col in range(self.board.width):
-                if self.board.board[row][col]:
-                    tl = (
-                        col * self.pieceWidth,
-                        (self.board.height - row - 1) * self.pieceHeight,
+        # Draw the board and current piece
+        draw_board(screen, env, opt.block_size)
+
+        # Refresh the screen
+        pygame.display.flip()
+        clock.tick(opt.fps)
+
+        if done:
+            running = False
+
+    pygame.quit()
+
+def draw_board(screen, board, block_size):
+    """Render the Tetris board and pieces on the screen."""
+    for row in range(board.height):
+        for col in range(board.width):
+            if board.board[row][col]:
+                pygame.draw.rect(
+                    screen,
+                    board.colors[row][col],
+                    pygame.Rect(
+                        col * block_size,
+                        (board.height - row - 1) * block_size,
+                        block_size,
+                        block_size,
                     )
-                    pygame.draw.rect(
-                        self.screen,
-                        self.board.colors[row][col],
-                        pygame.Rect(tl, (self.pieceWidth, self.pieceHeight)),
-                    )
+                )
+    # Draw grid
+    for x in range(0, board.width * block_size, block_size):
+        pygame.draw.line(screen, WHITE, (x, 0), (x, board.height * block_size))
+    for y in range(0, board.height * block_size, block_size):
+        pygame.draw.line(screen, WHITE, (0, y), (board.width * block_size, y))
 
-    def draw_hover(self):
-        for b in self.curr_piece.body:
-            tl = (
-                (self.x + b[0]) * self.pieceWidth,
-                (self.board.height - (self.y + b[1]) - 1) * self.pieceHeight,
-            )
-            pygame.draw.rect(
-                self.screen,
-                self.curr_piece.color,
-                pygame.Rect(tl, (self.pieceWidth, self.pieceHeight)),
-            )
+if __name__ == "__main__":
+    opt = parse_config()
+    test(opt)
