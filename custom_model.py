@@ -13,9 +13,11 @@ class CUSTOM_AI_MODEL:
             model.eval()
             print(f"Loaded model from {self.model_path}")
             return model
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Model file not found at {self.model_path}. Please ensure the path is correct.")
         except Exception as e:
-            print(f"Error loading model: {e}")
-            return None
+            raise RuntimeError(f"Error loading model: {e}")
+
 
     def get_best_move(self, board, piece, depth=1):
         # Prepare the board state as input for the model
