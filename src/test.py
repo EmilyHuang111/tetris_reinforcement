@@ -26,7 +26,7 @@ def test(opt):
 
     # Initialize and load the model
     model = QLearning()  # Ensure this matches the training model
-    model.load_state_dict(torch.load("{}/tetris".format(opt.model_save_path), map_location=device))
+    model.load_state_dict(torch.load("{}/tetris_2000_state_dict".format(opt.model_save_path), map_location=device))
     model.to(device)
     model.eval()
 
