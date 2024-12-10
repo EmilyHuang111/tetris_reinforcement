@@ -5,23 +5,18 @@ from board import Board
 from q_learning import QLearning
 
 def parse_config():
-    import argparse
-
-    # Initialize the argument parser
     parser = argparse.ArgumentParser()
 
-    # Define command-line arguments in a new sequence
+    # Define command-line arguments
     parser.add_argument("--height", type=int, default=20, help="Height of the game board")
     parser.add_argument("--width", type=int, default=10, help="Width of the game board")
     parser.add_argument("--block_size", type=int, default=30, help="Size of each block")
     parser.add_argument("--batch_size", type=int, default=512, help="Batch size for training")
-    parser.add_argument("--fps", type=int, default=300, help="frames per second")
+    parser.add_argument("--fps", type=int, default=300, help="Frames per second")
     parser.add_argument("--output", type=str, default="output.mp4")
     parser.add_argument("--model_save_path", type=str, default="trained_models", help="Path to save trained models")
 
-    # Parse arguments and return
-    config = parser.parse_args()
-    return config
+    return parser.parse_args()
 
 def test(opt):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -31,7 +26,7 @@ def test(opt):
 
     # Initialize and load the model
     model = QLearning()  # Ensure this matches the training model
-    model.load_state_dict(torch.load("{}/tetris_2000_state_dict.pth".format(opt.saved_path), map_location=device))
+    model.load_state_dict(torch.load("{}/tetris_2000_state_dict.pth".format(opt.model_save_path), map_location=device))
     model.to(device)
     model.eval()
 
@@ -58,9 +53,6 @@ def test(opt):
         if done:
             out.release()
             break
-
-        
-
 
 if __name__ == "__main__":
     opt = parse_config()
