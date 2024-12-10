@@ -1,14 +1,14 @@
 import torch
 import numpy as np
 try:
-    model = torch.load("trained_models/tetris_2000")
+    model = torch.load("src/trained_models/tetris_2000")
 except Exception as e:
     print(f"Error: {e}")
     import traceback
     traceback.print_exc()
 
 class CUSTOM_AI_MODEL:
-    def __init__(self, model_path="trained_models/tetris_2000"):
+    def __init__(self, model_path="src/trained_models/tetris_2000"):
         self.model_path = model_path
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self.load_model()
