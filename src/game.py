@@ -10,20 +10,19 @@ BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 
 def parse_config():
-    # Initialize the argument parser
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser()
-
-    # Define command-line arguments
     parser.add_argument("--height", type=int, default=20, help="Height of the game board")
     parser.add_argument("--width", type=int, default=10, help="Width of the game board")
     parser.add_argument("--block_size", type=int, default=30, help="Size of each block")
-    parser.add_argument("--fps", type=int, default=300, help="Frames per second")
-    parser.add_argument("--output", type=str, default="output.mp4")
-    parser.add_argument("--model_save_path", type=str, default="trained_models", help="Path to save trained models")
-
+    parser.add_argument("--fps", type=int, default=60, help="Frames per second")
+    parser.add_argument("--output", type=str, default="output.mp4", help="Path for video output (unused here)")
+    parser.add_argument("--model_save_path", type=str, default="trained_models", help="Path to save/load trained models")
     return parser.parse_args()
 
 def test(opt):
+    """Run the Tetris game with the AI model."""
+    # Set up device for PyTorch
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     torch.manual_seed(123)
     if torch.cuda.is_available():
@@ -31,23 +30,28 @@ def test(opt):
 
     # Initialize and load the model
     model = QLearning()
-    model.load_state_dict(torch.load(f"{opt.model_save_path}/tetris_2000_state_dict.pth", map_location=device))
-    model.to(device)
-    model.eval()
+    try:
+        model_path = f"{opt.model_save_path}/tetris_2000_state_dict.pth"
+        model.load_state_dict(torch.load(model_path, map_location=device, weights_only=True))
+        model.to(device)
+        model.eval()
+        print(f"Model loaded successfully from {model_path}")
+    except Exception as e:
+        print(f"Failed to load the model: {e}")
+        return
 
-    # Initialize the PyGame environment
+    # Initialize PyGame
     pygame.init()
     screen_width = opt.width * opt.block_size
     screen_height = opt.height * opt.block_size
     screen = pygame.display.set_mode((screen_width, screen_height))
     pygame.display.set_caption("Tetris AI")
-
     clock = pygame.time.Clock()
-    running = True
 
     # Initialize the Tetris board
     env = Board(width=opt.width, height=opt.height, block_size=opt.block_size)
     env.reset()
+    running = True
 
     while running:
         screen.fill(BLACK)
@@ -62,7 +66,7 @@ def test(opt):
         index = torch.argmax(predictions).item()
         action = next_actions[index]
 
-        # Step the environment
+        # Apply the action and update the game state
         _, done = env.step(action, render=False)
 
         # Draw the board and current piece
@@ -73,6 +77,7 @@ def test(opt):
         clock.tick(opt.fps)
 
         if done:
+            print("Game over!")
             running = False
 
     pygame.quit()
