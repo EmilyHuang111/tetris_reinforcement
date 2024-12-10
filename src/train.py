@@ -51,14 +51,15 @@ def train(opt, resume_model_path=None, start_epoch=0):
     if os.path.isdir(opt.log_directory) and start_epoch == 0:
         shutil.rmtree(opt.log_directory)
     os.makedirs(opt.log_directory, exist_ok=True)
+    os.makedirs(opt.model_save_path, exist_ok=True)
 
     writer = SummaryWriter(opt.log_directory)
     env = Board(width=opt.width, height=opt.height, block_size=opt.block_size)  # Tetris environment
 
     # Load the model
     if resume_model_path:
-        model = torch.load(resume_model_path)
-        print(f"Resuming training from model: {None}")
+        model.load_state_dict(torch.load(resume_model_path))
+        print(f"Resuming training from model: {resume_model_path}")
     else:
         model = QLearning()
 
@@ -151,9 +152,11 @@ def train(opt, resume_model_path=None, start_epoch=0):
         writer.add_scalar('Train/Cleared lines', final_cleared_lines, epoch - 1)
 
         if epoch > 0 and epoch % opt.save_freq == 0:
-            torch.save(model, f"{opt.model_save_path}/tetris_{epoch}")
+            torch.save(model.state_dict(), f"{opt.model_save_path}/tetris_{epoch}_state_dict.pth")
 
-    torch.save(model, f"{opt.model_save_path}/tetris_final")
+
+    torch.save(model.state_dict(), f"{opt.model_save_path}/tetris_final.pth")
+    
     print(f"Epoch: {epoch}/{opt.epochs}, Cleared lines: {final_cleared_lines}")
 
 
