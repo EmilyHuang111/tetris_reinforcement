@@ -1,60 +1,45 @@
 import torch
-import numpy as np
-try:
-    model = torch.load("trained_models/tetris_2000")
-except Exception as e:
-    print(f"Error: {e}")
-    import traceback
-    traceback.print_exc()
+from q_learning import QLearning  # Assuming QLearning is your model class
+
 
 class CUSTOM_AI_MODEL:
     def __init__(self, model_path="trained_models/tetris_2000"):
-        self.model_path = model_path
+        # Load the pre-trained model
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = self.load_model()
+        self.model = torch.load(model_path, map_location=self.device)
+        self.model.eval()
 
+    def get_best_move(self, board, current_piece):
+        """
+        Determine the best move for the given piece and board state.
 
+        Args:
+            board (Board): The current board state.
+            current_piece (Piece): The current piece.
 
-
-    def load_model(self):
-        try:
-            model = torch.load(self.model_path, map_location=self.device)
-            model.eval()
-            print(f"Loaded model from {self.model_path}")
-            return model
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Model file not found at {self.model_path}. Please ensure the path is correct.")
-        except Exception as e:
-            raise RuntimeError(f"Error loading model: {e}")
-
-
-    def get_best_move(self, board, piece, depth=1):
-        # Prepare the board state as input for the model
-        state = torch.FloatTensor(board.get_current_board_state())
-        state = state.unsqueeze(0).to(self.device)  # Add batch dimension
+        Returns:
+            tuple: The best x-coordinate and the rotated piece.
+        """
+        best_score = float("-inf")
+        best_move = None
 
         # Get all possible next states
         next_states = board.get_next_states()
-        best_move = None
-        best_value = -float('inf')
 
-        for (x, rotation), next_state in next_states.items():
-            # Predict Q-value for each state using the loaded model
+        for (x, rotation), board_state in next_states.items():
+            # Convert board state to a tensor and send it to the model
+            board_state = board_state.to(self.device)
+
             with torch.no_grad():
-                next_state_tensor = torch.FloatTensor(next_state).unsqueeze(0).to(self.device)
-                q_value = self.model(next_state_tensor)[0, 0].item()
+                score = self.model(board_state).item()
 
-            if q_value > best_value:
-                best_value = q_value
+            if score > best_score:
+                best_score = score
                 best_move = (x, rotation)
 
-        # Return the best move found
-        if best_move:
-            x, rotation = best_move
-            for _ in range(rotation):
-                piece = piece.get_next_rotation()
-            return x, piece
+        # Extract the best x and rotation, and return the corresponding piece
+        x, rotation = best_move
+        for _ in range(rotation):
+            current_piece = current_piece.get_next_rotation()
 
-        # Fallback: Random move
-        print("No valid moves found; defaulting to random move.")
-        return randint(0, board.width - 1), piece
+        return x, current_piece
