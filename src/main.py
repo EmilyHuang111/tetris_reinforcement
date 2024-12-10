@@ -14,7 +14,7 @@ def main():
     if mode == "student":
         # Use CUSTOM_AI_MODEL for student mode
         from custom_model import CUSTOM_AI_MODEL
-        ai = CUSTOM_AI_MODEL(model_path="trained_models/tetris.pth")
+        ai = CUSTOM_AI_MODEL(model_path="trained_models/tetris_2000_state_dict.pth")
         game = Game(mode="student", agent=ai)
     else:
         # For other modes
