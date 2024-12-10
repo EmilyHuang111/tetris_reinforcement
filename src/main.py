@@ -21,7 +21,7 @@ def main():
         game = Game(mode=mode)
 
     # Run the game
-    game.run_no_visual()
+    game.run()
 
 
 if __name__ == "__main__":
