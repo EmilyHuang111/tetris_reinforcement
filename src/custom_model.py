@@ -1,16 +1,14 @@
 import torch
-import sys
-import os
-
-
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
-
 from q_learning import QLearning  # Assuming QLearning is your model class
+
+
 class CUSTOM_AI_MODEL:
     def __init__(self, model_path="trained_models/tetris_2000"):
         # Load the pre-trained model
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = torch.load(model_path, map_location=self.device)
+       self.model = QLearning()
+        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
+        self.model.to(self.device)
         self.model.eval()
 
     def get_best_move(self, board, current_piece):
