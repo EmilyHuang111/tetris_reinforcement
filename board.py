@@ -266,6 +266,7 @@ class Board:
         self.score += score
         self.tetrominoes += 1
         self.cleared_lines += lines_cleared
+        print('Line cleared', cleared_lines)
         
         if not self.gameover:
             self.new_piece()
