@@ -87,13 +87,25 @@ class Piece:
         self.bag = list(range(len(self.pieces)))
         random.shuffle(self.bag)
         if body == None:
-            self.body, self.color = choice(BODIES)
+            piece_id = self.bag.pop()
+            self.body = self.convert_to_body(self.pieces[piece_id])
+            self.color = self.piece_colors[piece_id]
         else:
             self.body = body
             self.color = color
         self.skirt = self.calc_skirt()
-        
-        
+
+    def convert_to_body(self, piece):
+        """
+        Converts a 2D piece array into a list of tuples representing its blocks.
+        """
+        body = []
+        for y, row in enumerate(piece):
+            for x, cell in enumerate(row):
+                if cell != 0:
+                    body.append((x, y))
+        return body
+
     def calc_skirt(self):
         skirt = []
         for i in range(4):
@@ -105,7 +117,7 @@ class Piece:
                 skirt.append(low)
         return skirt
 
-    def get_new_piece(self):
+    def create_new_piece(self):
         if not self.bag:
             self.bag = list(range(len(self.pieces)))
             random.shuffle(self.bag)
@@ -128,19 +140,8 @@ class Piece:
         rotated = [[piece[num_rows - 1 - j][i] for j in range(num_rows)] for i in range(num_cols)]
         return rotated
         
-
 def main():
     for b in BODIES:
         p = Piece(b)
         print(p.skirt)
         
-if __name__ == "__main__":
-    main()
-
-
-
-
-
-
-
-
