@@ -1,11 +1,7 @@
 from copy import deepcopy
 import numpy as np
-from PIL import Image
-import cv2
 import torch
 from piece import Piece  
-
-
 
 class Board:
     """
@@ -16,7 +12,7 @@ class Board:
     self.heights is an array of integers, where self.heights[i] is the
     maximum height of any square in column i
     """
-    def __init__(self, height=20, width=10, block_size=20):
+    def __init__(self, height=20, width=10, block_size=50):
         self.height = height
         self.width = width
         self.block_size = block_size
@@ -61,8 +57,6 @@ class Board:
             
             if self.board[target_y][target_x]:
                 raise ValueError(f"Placement conflict at x={target_x}, y={target_y}")
-
-
 
     def drop_height(self, piece, x):
         y = -1
@@ -114,7 +108,7 @@ class Board:
         self.score = 0
         self.tetrominoes = 0
         self.cleared_lines = 0
-        self.ind, self.piece = self.piece_manager.get_new_piece()
+        self.ind, self.piece = self.piece_manager.create_new_piece()
         self.current_pos = {"x": self.width // 2 - len(self.piece[0]) // 2, "y": 0}
         self.gameover = False
         return self.compute_board_metrics(self.board)
@@ -135,10 +129,10 @@ class Board:
             for x in range(valid_xs + 1):
                 piece = [row[:] for row in curr_piece]
                 pos = {"x": x, "y": 0}
-                while not self.check_collision(piece, pos):
+                while not self.verify_collision(piece, pos):
                     pos["y"] += 1
                 self.adjust_piece_on_collision(piece, pos)
-                board = self.store(piece, pos)
+                board = self.save_piece(piece, pos)
                 states[(x, i)] = self.compute_board_metrics(board)
             curr_piece = self.piece_manager.rotate(curr_piece)  # Use the Piece class's rotate method
         return states
@@ -166,9 +160,9 @@ class Board:
 
        
     def compute_board_metrics(self, board):
-        lines_cleared, board = self.check_cleared_rows(board)
+        lines_cleared, board = self.confirm_cleared_rows(board)
         holes = self.holes(board)
-        bumpiness, height = self.get_bumpiness_and_height(board)
+        bumpiness, height = self.calculate_bumpiness_and_height(board)
         return torch.FloatTensor([lines_cleared, holes, bumpiness, height])
 
     def holes(self, board):
@@ -180,9 +174,8 @@ class Board:
             num_holes += len([x for x in col[row + 1:] if x == 0])
         return num_holes
         
-#fix the function names from here 
-    
-    def get_bumpiness_and_height(self, board):
+
+    def calculate_bumpiness_and_height(self, board):
         board = np.array(board)
         mask = board != 0
         invert_heights = np.where(mask.any(axis=0), np.argmax(mask, axis=0), self.height)
@@ -194,28 +187,47 @@ class Board:
         total_bumpiness = np.sum(diffs)
         return total_bumpiness, total_height
 
-    def get_current_board_state(self):
+
+
+    def retrieve_board_state(self):
         board = [x[:] for x in self.board]
+        
         for y in range(len(self.piece)):
             for x in range(len(self.piece[y])):
-                board[y + self.current_pos["y"]][x + self.current_pos["x"]] = self.piece[y][x]
+                board_y = y + self.current_pos["y"]
+                board_x = x + self.current_pos["x"]
+                
+                # Check if the position is within the bounds of the board
+                if 0 <= board_y < self.height and 0 <= board_x < self.width:
+                    # Only place the piece on valid positions
+                    if self.piece[y][x]:
+                        board[board_y][board_x] = self.piece[y][x]
         return board
 
     def new_piece(self):
-        self.ind, self.piece = self.piece_manager.get_new_piece()
+        self.ind, self.piece = self.piece_manager.create_new_piece()
         self.current_pos = {"x": self.width // 2 - len(self.piece[0]) // 2, "y": 0}
-        if self.check_collision(self.piece, self.current_pos):
+        if self.verify_collision(self.piece, self.current_pos):
             self.gameover = True
 
-    def check_collision(self, piece, pos):
+    def verify_collision(self, piece, pos):
         future_y = pos["y"] + 1
         for y in range(len(piece)):
             for x in range(len(piece[y])):
-                if future_y + y > self.height - 1 or self.board[future_y + y][pos["x"] + x] and piece[y][x]:
+                board_y = future_y + y
+                board_x = pos["x"] + x
+
+                # Check if the position is out of bounds
+                if board_y >= self.height or board_x < 0 or board_x >= self.width:
                     return True
+                
+                # Check if the piece is colliding with an existing block
+                if self.board[board_y][board_x] and piece[y][x]:
+                    return True
+
         return False
 
-    def store(self, piece, pos):
+    def save_piece(self, piece, pos):
         board = [x[:] for x in self.board]
         for y in range(len(piece)):
             for x in range(len(piece[y])):
@@ -223,79 +235,38 @@ class Board:
                     board[y + pos["y"]][x + pos["x"]] = piece[y][x]
         return board
 
-    def check_cleared_rows(self, board):
+    def confirm_cleared_rows(self, board):
         to_delete = []
         for i, row in enumerate(board[::-1]):
             if 0 not in row:
                 to_delete.append(len(board) - 1 - i)
         if len(to_delete) > 0:
-            board = self.remove_row(board, to_delete)
+            board = self.delete_row(board, to_delete)
         return len(to_delete), board
 
-    def remove_row(self, board, indices):
+    def delete_row(self, board, indices):
         for i in indices[::-1]:
             del board[i]
             board = [[0 for _ in range(self.width)]] + board
         return board
 
-    def step(self, action, render=True, video=None):
+    def move(self, action):
         x, num_rotations = action
         self.current_pos = {"x": x, "y": 0}
         for _ in range(num_rotations):
             self.piece = self.piece_manager.rotate(self.piece)
 
-        while not self.check_collision(self.piece, self.current_pos):
+        while not self.verify_collision(self.piece, self.current_pos):
             self.current_pos["y"] += 1
-            if render:
-                self.render(video)
 
-        self.board = self.store(self.piece, self.current_pos)
+        self.board = self.save_piece(self.piece, self.current_pos)
 
-        lines_cleared, self.board = self.check_cleared_rows(self.board)
+        lines_cleared, self.board = self.confirm_cleared_rows(self.board)
         score = 1 + (lines_cleared ** 2) * self.width
         self.score += score
         self.tetrominoes += 1
         self.cleared_lines += lines_cleared
+        
         if not self.gameover:
             self.new_piece()
-        return score, self.gameover
-
-    def render(self, video=None):
-        if not self.gameover:
-            img = [self.piece_manager.piece_colors[p] for row in self.get_current_board_state() for p in row]
-        else:
-            img = [self.piece_manager.piece_colors[p] for row in self.board for p in row]
-        img = np.array(img).reshape((self.height, self.width, 3)).astype(np.uint8)
-        img = img[..., ::-1]
-        img = Image.fromarray(img, "RGB")
-
-        img = img.resize((self.width * self.block_size, self.height * self.block_size), 0)
-        img = np.array(img)
-        img[[i * self.block_size for i in range(self.height)], :, :] = 0
-        img[:, [i * self.block_size for i in range(self.width)], :] = 0
-
-        img = np.concatenate((img, self.extra_board), axis=1)
-
-        cv2.putText(img, "Score:", (self.width * self.block_size + int(self.block_size / 2), self.block_size),
-                    fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
-        cv2.putText(img, str(self.score),
-                    (self.width * self.block_size + int(self.block_size / 2), 2 * self.block_size),
-                    fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
-
-        cv2.putText(img, "Pieces:", (self.width * self.block_size + int(self.block_size / 2), 4 * self.block_size),
-                    fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
-        cv2.putText(img, str(self.tetrominoes),
-                    (self.width * self.block_size + int(self.block_size / 2), 5 * self.block_size),
-                    fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
-
-        cv2.putText(img, "Lines:", (self.width * self.block_size + int(self.block_size / 2), 7 * self.block_size),
-                    fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
-        cv2.putText(img, str(self.cleared_lines),
-                    (self.width * self.block_size + int(self.block_size / 2), 8 * self.block_size),
-                    fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1.0, color=self.text_color)
-
-        if video:
-            video.write(img)
-
-        cv2.imshow("Deep Q-Learning Tetris", img)
-        cv2.waitKey(1)
+        return score, self.gameover,self.cleared_lines,self.piece
