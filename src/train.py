@@ -1,3 +1,27 @@
+Conversation opened. 2 messages. All messages read.
+
+Skip to content
+Using Gmail with screen readers
+Enable desktop notifications for Gmail.
+   OK  No thanks
+5 of 2,223
+Files
+
+Huang, Jimin
+AttachmentsDec 11, 2024, 12:00 PM (1 day ago)
+ 
+
+Huang, Jimin <Jimin.Huang@hdrinc.com>
+Attachments
+Dec 11, 2024, 12:47 PM (1 day ago)
+to me
+
+ 
+
+ 
+
+ 8 Attachments
+  •  Scanned by Gmail
 import argparse
 import os
 import shutil
@@ -165,3 +189,5 @@ if __name__ == "__main__":
     opt.epochs = 2500  # Updated total epochs
     train(opt, resume_model_path=None, start_epoch=0)
     
+train.txt
+Displaying train.txt.
