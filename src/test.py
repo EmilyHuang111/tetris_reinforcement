@@ -2,7 +2,6 @@ import argparse
 import torch
 import cv2
 from board import Board
-from q_learning import QLearning
 
 def parse_config():
     parser = argparse.ArgumentParser()
@@ -19,15 +18,13 @@ def parse_config():
     return parser.parse_args()
 
 def test(opt):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
     torch.manual_seed(123)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(123)
 
     # Initialize and load the model
-    model = QLearning()  # Ensure this matches the training model
-    model.load_state_dict(torch.load("{}/tetris_2000_state_dict.pth".format(opt.model_save_path), map_location=device))
-    model.to(device)
+    model = torch.load("{}/tetris_2000".format(opt.model_save_path), map_location=lambda storage, loc: storage)
     model.eval()
 
     # Initialize the Tetris board
