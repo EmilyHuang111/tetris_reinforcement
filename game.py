@@ -132,8 +132,8 @@ class Game:
 
             # Render the game
             screen.fill(BLACK)
-            self.draw_grid()
             self.draw_board(screen)
+            self.draw_grid()
             pygame.display.flip()
             clock.tick(30)
 
