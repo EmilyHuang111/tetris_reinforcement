@@ -52,7 +52,7 @@ class Game:
                     action,bestPiece = self.ai.get_best_move(self.board,self.curr_piece)  
                     score, gameover,lineCleared,self.curr_piece = self.board.move(action)
                     print('Line cleared',lineCleared)
-            clock.tick(30)
+            
 
         pygame.quit()
 
