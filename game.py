@@ -31,7 +31,7 @@ class Game:
         self.pieceWidth = self.screenWidth / self.board.width
         clock = pygame.time.Clock()
         running = True
-        render_interval = 500 if not self.ai else 100  # Faster updates for AI
+        render_interval = 100 if not self.ai else 100  # Faster updates for AI
 
         pygame.time.set_timer(pygame.USEREVENT, render_interval)
         
