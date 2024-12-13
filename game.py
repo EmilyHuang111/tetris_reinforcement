@@ -39,7 +39,7 @@ class Game:
             MOVEEVENT, t = pygame.USEREVENT + 1, 100
         #    print('AI')
         else:
-            MOVEEVENT, t = pygame.USEREVENT + 1, 500
+            MOVEEVENT, t = pygame.USEREVENT + 1, 200
 
         while running:
             x, bestPiece = self.ai.get_best_move(self.board,self.curr_piece)
