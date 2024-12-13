@@ -1,27 +1,3 @@
-Conversation opened. 2 messages. All messages read.
-
-Skip to content
-Using Gmail with screen readers
-Enable desktop notifications for Gmail.
-   OK  No thanks
-5 of 2,223
-Files
-
-Huang, Jimin
-AttachmentsDec 11, 2024, 12:00 PM (1 day ago)
- 
-
-Huang, Jimin <Jimin.Huang@hdrinc.com>
-Attachments
-Dec 11, 2024, 12:47 PM (1 day ago)
-to me
-
- 
-
- 
-
- 8 Attachments
-  •  Scanned by Gmail
 import argparse
 import os
 import shutil
@@ -79,14 +55,7 @@ def train(opt, resume_model_path=None, start_epoch=0):
 
     writer = SummaryWriter(opt.log_directory)
     env = Board(width=opt.width, height=opt.height, block_size=opt.block_size)  # Tetris environment
-
-    # Load the model
-    if resume_model_path:
-        model.load_state_dict(torch.load(resume_model_path))
-        print(f"Resuming training from model: {resume_model_path}")
-    else:
-        model = QLearning()
-
+    model = QLearning()
     optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate)
     criterion = nn.MSELoss()
 
@@ -97,12 +66,13 @@ def train(opt, resume_model_path=None, start_epoch=0):
         state = state.cuda()
 
     replay_memory = deque(maxlen=opt.memory_size)
-    epoch = start_epoch
+    epoch = 0
 
     while epoch < opt.epochs:
         next_steps = env.get_next_states()
         epsilon = opt.epsilon_end + (max(opt.decay_epochs - epoch, 0) * (
                 opt.epsilon_start - opt.epsilon_end) / opt.decay_epochs)
+        
         random_action = random() <= epsilon
         next_actions, next_states = zip(*next_steps.items())
         next_states = torch.stack(next_states)
@@ -122,7 +92,7 @@ def train(opt, resume_model_path=None, start_epoch=0):
         next_state = next_states[index, :]
         action = next_actions[index]
 
-        reward, done = env.step(action, render=False)
+        reward, done,erasedline,piec = env.move(action)
 
         if torch.cuda.is_available():
             next_state = next_state.cuda()
@@ -176,18 +146,14 @@ def train(opt, resume_model_path=None, start_epoch=0):
         writer.add_scalar('Train/Cleared lines', final_cleared_lines, epoch - 1)
 
         if epoch > 0 and epoch % opt.save_freq == 0:
-            torch.save(model.state_dict(), f"{opt.model_save_path}/tetris_{epoch}_state_dict.pth")
+            torch.save(model, "{}/tetris_{}".format(opt.model_save_path, epoch))
 
 
-    torch.save(model.state_dict(), f"{opt.model_save_path}/tetris_final.pth")
+    torch.save(model, "{}/tetris".format(opt.model_save_path))
     
     print(f"Epoch: {epoch}/{opt.epochs}, Cleared lines: {final_cleared_lines}")
 
 
 if __name__ == "__main__":
     opt = parse_config()
-    opt.epochs = 2500  # Updated total epochs
-    train(opt, resume_model_path=None, start_epoch=0)
-    
-train.txt
-Displaying train.txt.
+    train(opt)
