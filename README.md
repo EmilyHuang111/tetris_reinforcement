@@ -32,8 +32,5 @@ This project is a Tetris game implemented in Python with reinforcement learning 
 
 1. Clone the repository:
    ```bash
-   https://github.com/EmilyHuang111/tetris_reinforcement.git
+   git clone https://github.com/EmilyHuang111/tetris_reinforcement.git
 
-
-   
-   
