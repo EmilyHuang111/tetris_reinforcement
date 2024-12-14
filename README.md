@@ -1,5 +1,5 @@
 
-## Project Overview
+## Tetris with Reinforcement Learning
 
 This project is a Tetris game implemented in Python with reinforcement learning capabilities. It allows a user or an AI to play Tetris, and includes features to train the AI using a Q-Learning model. The game includes a visual interface with `pygame`, AI decision-making with a pre-trained model, and training using PyTorch.
 
@@ -32,4 +32,5 @@ This project is a Tetris game implemented in Python with reinforcement learning 
 
 1. Clone the repository:
    ```bash
+   
    
